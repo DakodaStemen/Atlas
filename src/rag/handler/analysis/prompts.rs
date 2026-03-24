@@ -262,7 +262,10 @@ where
 
     // Search for relevant anti-patterns and lessons learned
     let query = if objective.is_empty() {
-        format!("code review security anti-pattern {}", &diff[..diff.len().min(200)])
+        format!(
+            "code review security anti-pattern {}",
+            &diff[..diff.len().min(200)]
+        )
     } else {
         format!("{} code review anti-pattern lessons_learned", objective)
     };

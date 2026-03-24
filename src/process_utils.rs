@@ -56,11 +56,7 @@ pub fn run_command(program: &str, args: &[&str], cwd: &Path) -> Result<Output> {
                 std::thread::sleep(POLL_INTERVAL);
             }
             Err(e) => {
-                return Err(anyhow::anyhow!(
-                    "Failed to wait on '{}': {}",
-                    program,
-                    e
-                ));
+                return Err(anyhow::anyhow!("Failed to wait on '{}': {}", program, e));
             }
         }
     }
@@ -96,13 +92,18 @@ pub async fn run_command_async(program: &str, args: &[String], cwd: &Path) -> Re
             }
             None => Vec::new(),
         };
-        Ok::<Output, std::io::Error>(Output { status, stdout, stderr })
+        Ok::<Output, std::io::Error>(Output {
+            status,
+            stdout,
+            stderr,
+        })
     })
     .await;
 
     match timeout_result {
-        Ok(result) => result
-            .map_err(|e| anyhow::anyhow!("Failed to wait on '{}' (async): {}", program, e)),
+        Ok(result) => {
+            result.map_err(|e| anyhow::anyhow!("Failed to wait on '{}' (async): {}", program, e))
+        }
         Err(_elapsed) => {
             let _ = child.kill().await;
             Err(anyhow::anyhow!(

@@ -673,7 +673,12 @@ fn write_prepared_to_db_conn(
     RagDb::batch_insert_symbol_index_conn(conn, &symbol_pairs)?;
     RagDb::batch_insert_reference_index_conn(conn, &ref_pairs)?;
 
-    RagDb::upsert_summary_conn(conn, &p.source, &p.summary_text, p.summary_embedding.as_deref())?;
+    RagDb::upsert_summary_conn(
+        conn,
+        &p.source,
+        &p.summary_text,
+        p.summary_embedding.as_deref(),
+    )?;
     Ok(())
 }
 

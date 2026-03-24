@@ -277,7 +277,9 @@ fn mcp_e2e_query_knowledge_returns_result() {
     let qk_req = r#"{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"query_knowledge","arguments":{"query":"test query"}}}"#;
     send_request(&mut stdin, qk_req).expect("write query_knowledge");
 
-    let qk_resp = receiver.read_response().expect("read query_knowledge response");
+    let qk_resp = receiver
+        .read_response()
+        .expect("read query_knowledge response");
     assert!(
         qk_resp.contains("\"result\""),
         "query_knowledge should return result: {}",

@@ -198,9 +198,7 @@ fn mask_secret_value(line: &str) -> String {
     let snippet: String = line.chars().take(80).collect();
     // Replace quoted values of 8+ chars with [REDACTED].
     static MASK_RE: OnceLock<Regex> = OnceLock::new();
-    let re = MASK_RE.get_or_init(|| {
-        Regex::new(r#""[^"]{8,}""#).expect("mask_secret_value regex")
-    });
+    let re = MASK_RE.get_or_init(|| Regex::new(r#""[^"]{8,}""#).expect("mask_secret_value regex"));
     re.replace_all(&snippet, "\"[REDACTED]\"").into_owned()
 }
 

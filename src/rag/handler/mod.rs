@@ -50,9 +50,9 @@ mod skills;
 mod ui;
 mod web;
 
-pub use control_loop::{ManagedLoop, LoopState, LoopStatus, GetLoopStateParams};
-pub use model_routing::{RouteTaskParams, AIModel, Phase, RoutingDecision, ModelRole};
-pub use planning::{PlanTaskParams, Plan, PlanStep};
+pub use control_loop::{GetLoopStateParams, LoopState, LoopStatus, ManagedLoop};
+pub use model_routing::{AIModel, ModelRole, Phase, RouteTaskParams, RoutingDecision};
+pub use planning::{Plan, PlanStep, PlanTaskParams};
 pub use providers::{DefaultIngestion, DefaultStorage, IngestionProvider, VectorStoreProvider};
 pub use shell::{ExecuteShellCommandParams, GetSystemStatusParams, GitCheckpointParams};
 
@@ -448,8 +448,12 @@ pub fn sanitize_shell_output(s: &str) -> String {
     });
     let pem =
         PEM_BLOCK.get_or_init(|| Regex::new(r"-----BEGIN [A-Z ]+-----").expect("PEM_BLOCK regex"));
-    let secret_fn = SECRET_FILENAME
-        .get_or_init(|| Regex::new(r"(?i)(secret|password|credential|token|api.?key).*\.(txt|json|env|yaml|yml|toml)").expect("SECRET_FILENAME regex"));
+    let secret_fn = SECRET_FILENAME.get_or_init(|| {
+        Regex::new(
+            r"(?i)(secret|password|credential|token|api.?key).*\.(txt|json|env|yaml|yml|toml)",
+        )
+        .expect("SECRET_FILENAME regex")
+    });
     let t = win.replace_all(s, "[REDACTED]");
     let t = unix.replace_all(&t, "[REDACTED]");
     let t = openai.replace_all(&t, "[REDACTED]");
@@ -899,10 +903,8 @@ where
         let errors = crate::metrics::TOOL_ERRORS.get();
         let cache_hits = crate::metrics::CACHE_HITS.get();
         let cache_misses = crate::metrics::CACHE_MISSES.get();
-        let rerank_hits =
-            crate::rerank::RERANK_HITS.load(std::sync::atomic::Ordering::Relaxed);
-        let rerank_misses =
-            crate::rerank::RERANK_MISSES.load(std::sync::atomic::Ordering::Relaxed);
+        let rerank_hits = crate::rerank::RERANK_HITS.load(std::sync::atomic::Ordering::Relaxed);
+        let rerank_misses = crate::rerank::RERANK_MISSES.load(std::sync::atomic::Ordering::Relaxed);
 
         let cache_total = cache_hits + cache_misses;
         let cache_rate = if cache_total > 0 {

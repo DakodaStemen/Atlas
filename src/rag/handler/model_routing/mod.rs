@@ -11,14 +11,14 @@
 //! Env overrides: GEMINI_PLANNER_MODEL, GEMINI_EXECUTOR_MODEL, GEMINI_SKEPTIC_MODEL,
 //!                GEMINI_HUMANIZER_MODEL, OLLAMA_HOST (default http://localhost:11434)
 
-use std::env;
-use std::sync::{Arc, Mutex};
-use serde::{Deserialize, Serialize};
+use crate::rag::handler::{AgenticHandler, IngestionProvider, VectorStoreProvider};
 use reqwest::Client;
-use schemars::JsonSchema;
 use rmcp::model::{CallToolResult, Content};
 use rmcp::ErrorData as McpError;
-use crate::rag::handler::{AgenticHandler, IngestionProvider, VectorStoreProvider};
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
+use std::env;
+use std::sync::{Arc, Mutex};
 
 /// Maximum number of history entries retained by ModelRouter.
 const MAX_HISTORY_ENTRIES: usize = 10;
@@ -166,9 +166,20 @@ impl ModelRouter {
                 ModelRole::SuperExecutor => "super_executor",
             };
             // Truncate long entries to keep context compact
-            let p_short = if prompt.len() > 200 { &prompt[..200] } else { prompt.as_str() };
-            let r_short = if response.len() > 200 { &response[..200] } else { response.as_str() };
-            prefix.push_str(&format!("- [{}] Q: {} | A: {}\n", role_label, p_short, r_short));
+            let p_short = if prompt.len() > 200 {
+                &prompt[..200]
+            } else {
+                prompt.as_str()
+            };
+            let r_short = if response.len() > 200 {
+                &response[..200]
+            } else {
+                response.as_str()
+            };
+            prefix.push_str(&format!(
+                "- [{}] Q: {} | A: {}\n",
+                role_label, p_short, r_short
+            ));
         }
         prefix.push_str("[End context]\n\n");
         prefix
@@ -234,8 +245,7 @@ impl ModelRouter {
     }
 
     async fn call_google(&self, prompt: &str, model: &str) -> Result<String, String> {
-        let key = env::var("GOOGLE_API_KEY")
-            .map_err(|_| "Missing GOOGLE_API_KEY".to_string())?;
+        let key = env::var("GOOGLE_API_KEY").map_err(|_| "Missing GOOGLE_API_KEY".to_string())?;
         let url = format!(
             "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent?key={}",
             model, key

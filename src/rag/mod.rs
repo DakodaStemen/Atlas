@@ -26,8 +26,6 @@ pub mod xml;
 pub use dataset_collector::{is_low_value_training_row, DatasetCollector, DatasetCollectorGuard};
 pub use db::RagDb;
 pub use embedding::RagEmbedder;
-pub use handler::{
-    sanitize_shell_output, verify_ui_integrity_check, AgenticHandler, ManagedLoop,
-};
+pub use handler::{sanitize_shell_output, verify_ui_integrity_check, AgenticHandler, ManagedLoop};
 pub use ingest::{ingest_directory, ingest_directory_parallel, ingest_from_jsonl};
 pub use store::RagStore;

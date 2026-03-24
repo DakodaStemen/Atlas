@@ -2,11 +2,11 @@
 //! **Command enum:** Serve (MCP on STDIO), Ingest, IngestWeb, StressQuery, Audit, BinToJsonl, VerifyRetrieval, Query, CountChunks, ReviewLessons, Background, TrimTraining, etc.
 
 use clap::{Parser, Subcommand};
-use rmcp::transport::async_rw::TransportAdapterAsyncRW;
 use rag_mcp::rag::{
     cli_helpers::{run_refresh_file_index, run_verify_integrity},
     verify_ui_integrity_check, AgenticHandler, DatasetCollector, ManagedLoop, RagDb, RagStore,
 };
+use rmcp::transport::async_rw::TransportAdapterAsyncRW;
 use std::io::Read;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -720,7 +720,9 @@ fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let writer = tokio::io::stdout();
 
         let service = managed_loop
-            .serve::<(ChannelReader, tokio::io::Stdout), std::io::Error, TransportAdapterAsyncRW>((reader, writer))
+            .serve::<(ChannelReader, tokio::io::Stdout), std::io::Error, TransportAdapterAsyncRW>((
+                reader, writer,
+            ))
             .await
             .map_err(|e| e.to_string())?;
         eprintln!("Monolith MCP Server (Managed Loop) running on custom STDIO channel");

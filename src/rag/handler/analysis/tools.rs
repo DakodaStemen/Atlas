@@ -486,8 +486,8 @@ where
     .await
     .map_err(|e| internal_error_sanitized("aggregate_audit (integrity)", &e))?;
 
-    let integrity_pass = integrity_result.contains("\"pass\": true")
-        || integrity_result.contains("\"pass\":true");
+    let integrity_pass =
+        integrity_result.contains("\"pass\": true") || integrity_result.contains("\"pass\":true");
     if integrity_pass {
         checks_passed += 1;
     } else {

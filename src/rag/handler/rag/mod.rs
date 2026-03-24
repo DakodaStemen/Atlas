@@ -138,7 +138,9 @@ where
                 .ok()
                 .and_then(|v| v.parse().ok())
                 .unwrap_or(0.90);
-            if let Ok(Some(response_text)) = handler.store.db.semantic_cache_knn(query_emb, threshold) {
+            if let Ok(Some(response_text)) =
+                handler.store.db.semantic_cache_knn(query_emb, threshold)
+            {
                 crate::metrics::CACHE_HITS.inc();
                 let suffix = "\n[semantic_cache_hit]";
                 return Ok(CallToolResult::success(vec![Content::text(

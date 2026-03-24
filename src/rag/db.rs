@@ -306,9 +306,7 @@ impl RagDb {
                 Ok(()) => {}
                 Err(e) => {
                     let code = e.sqlite_error_code();
-                    if code == Some(ErrorCode::DatabaseBusy)
-                        && attempt < WRITE_RETRY_MAX_ATTEMPTS
-                    {
+                    if code == Some(ErrorCode::DatabaseBusy) && attempt < WRITE_RETRY_MAX_ATTEMPTS {
                         drop(conn);
                         let backoff = write_retry_backoff_ms(attempt);
                         tracing::debug!(
@@ -325,8 +323,7 @@ impl RagDb {
             }
             match f(&conn) {
                 Ok(val) => {
-                    conn.execute_batch("COMMIT")
-                        .map_err(RagDbError::Sqlite)?;
+                    conn.execute_batch("COMMIT").map_err(RagDbError::Sqlite)?;
                     return Ok(val);
                 }
                 Err(e) => {
@@ -498,15 +495,19 @@ impl RagDb {
         }
         let blob = embedding_to_blob(query_embedding);
         self.with_read_conn(|conn| {
-            let mut stmt = conn.prepare_cached(
-                "SELECT sc.response_text, scv.distance
+            let mut stmt = conn
+                .prepare_cached(
+                    "SELECT sc.response_text, scv.distance
                  FROM semantic_cache_vectors scv
                  JOIN semantic_cache sc ON sc.id = scv.cache_id
                  WHERE scv.embedding MATCH ?1 AND k = 1",
-            ).map_err(map_sqlite_vec_error)?;
-            let mut rows = stmt.query_map(rusqlite::params![blob.as_slice()], |row| {
-                Ok((row.get::<_, String>(0)?, row.get::<_, f64>(1)?))
-            }).map_err(map_sqlite_vec_error)?;
+                )
+                .map_err(map_sqlite_vec_error)?;
+            let mut rows = stmt
+                .query_map(rusqlite::params![blob.as_slice()], |row| {
+                    Ok((row.get::<_, String>(0)?, row.get::<_, f64>(1)?))
+                })
+                .map_err(map_sqlite_vec_error)?;
             if let Some(Ok((response, distance))) = rows.next() {
                 // For unit-normalized embeddings (Nomic): cos_sim ≈ 1 - dist^2/2
                 let sim = 1.0 - (distance * distance / 2.0) as f32;
@@ -755,9 +756,10 @@ impl RagDb {
             let mut backfill_stmt = conn.prepare(
                 "SELECT id, embedding FROM semantic_cache WHERE id NOT IN (SELECT cache_id FROM semantic_cache_vectors)"
             )?;
-            let backfill_rows: Vec<(i64, Vec<u8>)> = backfill_stmt.query_map([], |row| {
-                Ok((row.get(0)?, row.get(1)?))
-            })?.filter_map(|r| r.ok()).collect();
+            let backfill_rows: Vec<(i64, Vec<u8>)> = backfill_stmt
+                .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?
+                .filter_map(|r| r.ok())
+                .collect();
             for (id, blob) in &backfill_rows {
                 let _ = conn.execute(
                     "INSERT OR IGNORE INTO semantic_cache_vectors (cache_id, embedding) VALUES (?1, ?2)",
@@ -1257,8 +1259,8 @@ impl RagDb {
         conn: &Connection,
         symbol: &str,
     ) -> Result<Vec<String>, RagDbError> {
-        let mut stmt =
-            conn.prepare_cached("SELECT chunk_id FROM reference_index WHERE symbol = ?1 LIMIT 100")?;
+        let mut stmt = conn
+            .prepare_cached("SELECT chunk_id FROM reference_index WHERE symbol = ?1 LIMIT 100")?;
         let rows = stmt.query_map(rusqlite::params![symbol], |row| row.get::<_, String>(0))?;
         Ok(rows.filter_map(Result::ok).collect())
     }

@@ -3,23 +3,22 @@
 //! integration. The loop tracks progress toward objectives and can halt on stagnation
 //! or divergence.
 
-use std::sync::Arc;
-use std::time::Instant;
-use std::future::Future;
+use crate::rag::handler::analysis::SkepticReviewParams;
+use crate::rag::handler::model_routing::{ModelRole, ModelRouter};
+use crate::rag::handler::{AgenticHandler, DefaultIngestion, DefaultStorage};
 use rmcp::model::{
-    CallToolRequestParams, CallToolResult, ServerInfo, PaginatedRequestParams,
-    ListToolsResult, ListResourceTemplatesResult, ReadResourceRequestParams,
-    ReadResourceResult, ListPromptsResult, GetPromptRequestParams, GetPromptResult,
-    Content,
+    CallToolRequestParams, CallToolResult, Content, GetPromptRequestParams, GetPromptResult,
+    ListPromptsResult, ListResourceTemplatesResult, ListToolsResult, PaginatedRequestParams,
+    ReadResourceRequestParams, ReadResourceResult, ServerInfo,
 };
 use rmcp::service::RequestContext;
-use rmcp::{RoleServer, ErrorData as McpError, ServerHandler};
-use crate::rag::handler::{AgenticHandler, DefaultIngestion, DefaultStorage};
-use crate::rag::handler::model_routing::{ModelRouter, ModelRole};
-use crate::rag::handler::analysis::SkepticReviewParams;
+use rmcp::{ErrorData as McpError, RoleServer, ServerHandler};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::future::Future;
+use std::sync::Arc;
+use std::time::Instant;
 
 // ---------------------------------------------------------------------------
 // Configuration constants (overridable via env)
@@ -307,10 +306,7 @@ impl ManagedLoop {
 
     /// Get a snapshot of the current state.
     pub fn snapshot(&self) -> LoopState {
-        self.state
-            .lock()
-            .map(|s| s.clone())
-            .unwrap_or_default()
+        self.state.lock().map(|s| s.clone()).unwrap_or_default()
     }
 
     /// Check if a tool name is an audit tool (used to auto-extract scores).
@@ -390,7 +386,12 @@ impl ManagedLoop {
         }
 
         let output = tokio::process::Command::new("git")
-            .args(["stash", "push", "-m", "auto-revert: skeptic rejected change"])
+            .args([
+                "stash",
+                "push",
+                "-m",
+                "auto-revert: skeptic rejected change",
+            ])
             .current_dir(project_root)
             .output()
             .await
@@ -550,7 +551,9 @@ impl ServerHandler for ManagedLoop {
             // Gateway interception: get_loop_state
             if tool_name == "get_loop_state" {
                 let params: GetLoopStateParams = match request.arguments {
-                    Some(args) => serde_json::from_value(serde_json::Value::Object(args)).unwrap_or_default(),
+                    Some(args) => {
+                        serde_json::from_value(serde_json::Value::Object(args)).unwrap_or_default()
+                    }
                     None => GetLoopStateParams::default(),
                 };
                 return get_loop_state_impl(self, params).await;
@@ -595,7 +598,8 @@ impl ServerHandler for ManagedLoop {
             // 2. Ghost File Guard: capture pre-snapshot for fs-modifying tools
             let is_fs_tool = Self::is_fs_modifying_tool(&tool_name);
             let project_root = std::env::var("ALLOWED_ROOTS").unwrap_or_else(|_| ".".to_string());
-            let project_root = std::path::PathBuf::from(project_root.split(':').next().unwrap_or("."));
+            let project_root =
+                std::path::PathBuf::from(project_root.split(':').next().unwrap_or("."));
             let pre_snapshot = if is_fs_tool {
                 Some(Self::capture_git_snapshot_sync(&project_root))
             } else {
@@ -640,7 +644,9 @@ impl ServerHandler for ManagedLoop {
                         .output(),
                 )
                 .await
-                .map_err(|_| McpError::internal_error("Git diff timed out after 30s".to_string(), None))?
+                .map_err(|_| {
+                    McpError::internal_error("Git diff timed out after 30s".to_string(), None)
+                })?
                 .map_err(|e| McpError::internal_error(format!("Git diff error: {}", e), None))?;
 
                 let diff_text = String::from_utf8_lossy(&git_diff.stdout).to_string();
@@ -688,8 +694,7 @@ impl ServerHandler for ManagedLoop {
                                         );
                                     }
                                     Err(msg) => {
-                                        skeptic_feedback
-                                            .push_str(&format!(" | {}", msg));
+                                        skeptic_feedback.push_str(&format!(" | {}", msg));
                                     }
                                 }
                             }
@@ -779,7 +784,11 @@ impl ServerHandler for ManagedLoop {
                     return Err(McpError::internal_error(
                         format!(
                             "{} | {}",
-                            result.as_ref().err().map(|e| e.to_string()).unwrap_or_default(),
+                            result
+                                .as_ref()
+                                .err()
+                                .map(|e| e.to_string())
+                                .unwrap_or_default(),
                             dead_end_msg
                         ),
                         None,

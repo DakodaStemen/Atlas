@@ -408,10 +408,7 @@ where
         }
     };
     let bypass_hitl = params.0.bypass_hitl == Some(true)
-        && std::env::var("MCP_SHELL_BYPASS_HITL")
-            .ok()
-            .as_deref()
-            == Some("1");
+        && std::env::var("MCP_SHELL_BYPASS_HITL").ok().as_deref() == Some("1");
     if argv[0].eq_ignore_ascii_case("git") && !is_git_args_safe(&argv) && !bypass_hitl {
         return Ok(CallToolResult::success(vec![Content::text(
             GIT_DESTRUCTIVE_REJECT_MESSAGE.to_string(),
@@ -598,9 +595,7 @@ where
                     .args(["status", "--porcelain"])
                     .current_dir(&root)
                     .output();
-                let has_changes = status
-                    .map(|o| !o.stdout.is_empty())
-                    .unwrap_or(false);
+                let has_changes = status.map(|o| !o.stdout.is_empty()).unwrap_or(false);
 
                 if !has_changes {
                     return "No changes to checkpoint.".to_string();
@@ -615,7 +610,10 @@ where
                 match commit {
                     Ok(o) if o.status.success() => {
                         let stdout = String::from_utf8_lossy(&o.stdout);
-                        format!("Checkpoint saved: {}", stdout.lines().next().unwrap_or("ok"))
+                        format!(
+                            "Checkpoint saved: {}",
+                            stdout.lines().next().unwrap_or("ok")
+                        )
                     }
                     Ok(o) => {
                         let stderr = String::from_utf8_lossy(&o.stderr);
@@ -630,11 +628,7 @@ where
             Ok(CallToolResult::success(vec![Content::text(result)]))
         }
         "revert" => {
-            if std::env::var("GIT_CHECKPOINT_REVERT_ALLOW")
-                .ok()
-                .as_deref()
-                != Some("1")
-            {
+            if std::env::var("GIT_CHECKPOINT_REVERT_ALLOW").ok().as_deref() != Some("1") {
                 return Ok(CallToolResult::success(vec![Content::text(
                     "git_checkpoint revert is disabled. Set GIT_CHECKPOINT_REVERT_ALLOW=1 in the server environment to allow destructive rollback (git reset --hard HEAD~1).",
                 )]));

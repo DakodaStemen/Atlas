@@ -49,11 +49,8 @@ where
         )
         .ok()
         .unwrap_or_default();
-    let reranked = handler
-        .store
-        .rerank_results(objective, extra_rows, 5);
-    let mut seen: std::collections::HashSet<String> =
-        rows.iter().map(|r| r.id.clone()).collect();
+    let reranked = handler.store.rerank_results(objective, extra_rows, 5);
+    let mut seen: std::collections::HashSet<String> = rows.iter().map(|r| r.id.clone()).collect();
     for r in reranked {
         if seen.insert(r.id.clone()) {
             rows.push(r);

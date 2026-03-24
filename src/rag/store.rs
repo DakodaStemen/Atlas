@@ -356,12 +356,7 @@ impl RagStore {
             let sf_fts = source_filter.clone();
             let h_fts = s.spawn(move || -> Result<Vec<(String, f64)>, RagDbError> {
                 let conn = RagDb::open_reader(&path_fts)?;
-                RagDb::search_fts_impl(
-                    &conn,
-                    &qo,
-                    fetch_limit,
-                    Some(sf_fts.as_slice()),
-                )
+                RagDb::search_fts_impl(&conn, &qo, fetch_limit, Some(sf_fts.as_slice()))
             });
             let h_vec = s.spawn(move || -> Result<Vec<(String, f64)>, RagDbError> {
                 let conn = RagDb::open_reader(&path)?;
@@ -371,19 +366,10 @@ impl RagStore {
                     );
                     return Err(RagDbError::SearchWorker);
                 };
-                RagDb::search_vector_knn_impl(
-                    &conn,
-                    qvec,
-                    fetch_limit,
-                    Some(sf.as_slice()),
-                )
+                RagDb::search_vector_knn_impl(&conn, qvec, fetch_limit, Some(sf.as_slice()))
             });
-            let fts = h_fts
-                .join()
-                .map_err(|_| RagDbError::SearchWorker)??;
-            let vec_sc = h_vec
-                .join()
-                .map_err(|_| RagDbError::SearchWorker)??;
+            let fts = h_fts.join().map_err(|_| RagDbError::SearchWorker)??;
+            let vec_sc = h_vec.join().map_err(|_| RagDbError::SearchWorker)??;
             Ok::<_, RagDbError>((fts, vec_sc))
         })?;
         let merged_ids = RagDb::rrf_merge(fts_scores, vec_scores, hybrid_limit);

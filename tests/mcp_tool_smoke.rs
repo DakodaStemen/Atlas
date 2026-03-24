@@ -178,8 +178,8 @@ fn substitute_placeholders(v: &mut serde_json::Value, ws: &str, pad120: &str) {
 
 fn tool_arguments(ws: &str) -> serde_json::Value {
     let pad120 = "x".repeat(120);
-    let mut v: serde_json::Value =
-        serde_json::from_str(include_str!("tool_smoke_args.json")).expect("parse tool_smoke_args.json");
+    let mut v: serde_json::Value = serde_json::from_str(include_str!("tool_smoke_args.json"))
+        .expect("parse tool_smoke_args.json");
     substitute_placeholders(&mut v, ws, &pad120);
     v
 }
