@@ -1,0 +1,63 @@
+# Build artifacts
+target/
+**/*.rs.bk
+
+# Data (generated at runtime)
+data/*.db
+data/*.db-shm
+data/*.db-wal
+data/models/*.onnx
+data/models/*.json
+!data/models/.gitkeep
+!data/web_sources.json.example
+data/training.jsonl
+data/web.jsonl
+data/web_sources.json
+data/rag_manifest.json
+data/rag_manifest.json.bak
+data/backups/
+
+# ONNX Runtime shared libraries
+lib/
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Environment / secrets
+.env
+.env.local
+*.pem
+*.key
+*.crt
+credentials.json
+token.json
+
+# IDE
+.claude/
+.cursor/
+.windsurf/
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Node (for markdownlint)
+node_modules/
+package-lock.json
+
+# Test artifacts
+e2e/test-results/
+e2e/playwright-report/
+
+# Session state
+STATE.md

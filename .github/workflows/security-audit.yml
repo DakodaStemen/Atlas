@@ -1,0 +1,72 @@
+name: Security Audit
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+  schedule:
+    - cron: '0 6 * * 1'  # Weekly on Monday at 6 AM UTC
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  security-audit:
+    name: Security Vulnerability Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --locked
+
+      - name: Run security audit
+        run: |
+          cargo audit \
+            --ignore RUSTSEC-2025-0119 \
+            --ignore RUSTSEC-2024-0436 \
+            --ignore RUSTSEC-2026-0037 \
+            --ignore RUSTSEC-2026-0049 \
+            --json > audit-report.json || true
+          # RUSTSEC-2025-0119: accepted risk — no upstream fix available yet
+          # RUSTSEC-2024-0436: accepted risk — affects dev-only dependency, not production
+          # RUSTSEC-2026-0037: accepted risk — mitigated by input validation in our code
+          # RUSTSEC-2026-0049: accepted risk — waiting on upstream crate release with fix
+          cargo audit \
+            --ignore RUSTSEC-2025-0119 \
+            --ignore RUSTSEC-2024-0436 \
+            --ignore RUSTSEC-2026-0037 \
+            --ignore RUSTSEC-2026-0049
+
+      - name: Check for hardcoded secrets
+        run: |
+          echo "=== Checking for hardcoded secrets ==="
+          found=0
+          if grep -rPn --include="*.rs" --include="*.json" --include="*.yaml" --include="*.yml" \
+            '(password|secret|api_key|private_key)\s*[=:]\s*"[^"]{8,}"' . 2>/dev/null \
+            | grep -v "node_modules" | grep -v "target/" | grep -v ".git/" \
+            | grep -v "example" | grep -v "placeholder" | grep -v "test" \
+            | grep -v 'std::env::var' | grep -v 'env::var' | grep -v 'env!'; then
+            found=1
+          fi
+          if [ $found -eq 0 ]; then
+            echo "No hardcoded secrets detected"
+          else
+            echo "Potential secrets found - review required"
+            exit 1
+          fi
+
+      - name: Upload audit report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-audit-report
+          path: audit-report.json
+          retention-days: 30

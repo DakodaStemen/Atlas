@@ -1,0 +1,10 @@
+# Force dynamic C runtime (MD) to match ONNX Runtime (ort) and avoid
+# LNK2019/LNK1120 and LNK2038 (ort=MD, tokenizers/esaxx_rs=MT).
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=-crt-static"]
+
+# Force C/C++ deps (e.g. esaxx_rs from tokenizers) to use /MD so they match ort.
+# Only apply on Windows; on Linux these flags break the build.
+[target.x86_64-pc-windows-msvc.env]
+CFLAGS = "/MD"
+CXXFLAGS = "/MD"

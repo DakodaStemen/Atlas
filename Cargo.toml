@@ -1,0 +1,75 @@
+[package]
+name = "rag-mcp"
+version = "1.1.0"
+edition = "2021"
+description = "Stratum: local RAG (sqlite-vec + ONNX Nomic), FTS5 hybrid, web tools, single binary"
+license = "MIT"
+repository = "https://github.com/DakodaStemen/Stratum"
+homepage = "https://github.com/DakodaStemen/Stratum"
+readme = "README.md"
+
+[[bin]]
+name = "rag-mcp"
+path = "src/main.rs"
+
+[features]
+default = ["onnx"]
+onnx = ["ort", "tokenizers", "ndarray", "num_cpus"]
+cuda = ["ort/cuda"]
+otel = ["tracing-opentelemetry", "opentelemetry", "opentelemetry_sdk", "opentelemetry-otlp"]
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+# Pinned; watch 0.16+ for SEP-1686/async if adding long-running tools.
+rmcp = { version = "0.15.0", features = ["server", "macros", "transport-io", "schemars"] }
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+rusqlite = { version = "0.32", features = ["bundled"] }
+sqlite-vec = "0.1"
+blake3 = "1"
+# Pinned: rc12 changes builder error types; keep rc11 until we adapt RerankError.
+ort = { version = "=2.0.0-rc.11", optional = true, features = ["load-dynamic"] }
+# NOTE: ort 2.0.0-rc.11 is a release-candidate; upgrade to stable 2.x once released (H-4/L-6)
+ndarray = { version = "0.16", optional = true }
+tokenizers = { version = "0.15", optional = true }
+num_cpus = { version = "1", optional = true }
+thiserror = "1"
+toml = "0.8"
+anyhow = "1"
+async-trait = "0.1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+urlencoding = "2"
+schemars = "1"
+tree-sitter = "0.23"
+tree-sitter-python = "0.23"
+tree-sitter-rust = "0.23"
+tree-sitter-typescript = "0.23"
+walkdir = "2"
+sysinfo = "0.31"
+shlex = "1"
+regex = "1"
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "charset", "blocking", "json"] }
+html2md = "0.2"
+readability = { version = "0.3", default-features = false }
+url = "2"
+rand = "0.8"
+tracing-opentelemetry = { version = "0.24", optional = true }
+opentelemetry = { version = "0.23", optional = true }
+opentelemetry_sdk = { version = "0.23", optional = true, features = ["rt-tokio"] }
+opentelemetry-otlp = { version = "0.16", optional = true, features = ["trace"] }
+dotenvy = "0.15.7"
+
+[build-dependencies]
+serde_json = "1"
+
+[dev-dependencies]
+tempfile = "3"
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+strip = true

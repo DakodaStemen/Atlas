@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "monolith": {
+      "command": "./target/release/rag-mcp",
+      "args": ["serve"],
+      "env": {
+        "ORT_DYLIB_PATH": "./lib/libonnxruntime.so.1.23.0",
+        "DATA_DIR": "./data",
+        "ALLOWED_ROOTS": ".",
+        "RUST_LOG": "info"
+      }
+    }
+  }
+}

@@ -1,0 +1,72 @@
+name: Performance Monitoring
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+  schedule:
+    - cron: '0 3 * * *'  # Daily at 3 AM UTC
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  performance-checks:
+    name: Performance Checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build optimized binary
+        run: cargo build --release
+
+      - name: Check binary size
+        run: |
+          size=$(stat -c%s target/release/rag-mcp)
+          echo "Binary size: $size bytes"
+          if [ $size -gt 30000000 ]; then  # 30MB warning threshold
+            echo "WARNING: Binary size is large: $size bytes (threshold: 30MB)"
+          else
+            echo "Binary size acceptable: $size bytes"
+          fi
+
+      - name: Startup time benchmark
+        run: |
+          echo "=== Startup Performance ==="
+
+          start_time=$(date +%s%N)
+          timeout 5s ./target/release/rag-mcp --help >/dev/null 2>&1 || true
+          end_time=$(date +%s%N)
+
+          duration=$((($end_time - $start_time) / 1000000))
+          echo "Startup time: ${duration}ms"
+
+          if [ $duration -lt 1000 ]; then
+            echo "Startup time acceptable"
+          else
+            echo "WARNING: Slow startup detected"
+          fi
+
+      - name: Memory usage check
+        run: |
+          echo "=== Memory Usage ==="
+
+          output=$(/usr/bin/time -v timeout 10s ./target/release/rag-mcp serve 2>&1 || true)
+
+          if echo "$output" | grep -q "Maximum resident set size"; then
+            memory=$(echo "$output" | grep "Maximum resident set size" | awk '{print $6}')
+            echo "Memory usage: ${memory}KB"
+
+            if [ "$memory" -lt 100000 ]; then  # 100MB limit
+              echo "Memory usage acceptable"
+            else
+              echo "WARNING: High memory usage: ${memory}KB"
+            fi
+          fi

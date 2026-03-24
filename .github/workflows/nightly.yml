@@ -1,0 +1,61 @@
+name: Nightly Maintenance
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # Run at 2 AM UTC daily
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  neural-janitor:
+    name: Neural Janitor - Deduplication
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run neural janitor
+        run: bash scripts/neural_janitor.sh || echo "Neural janitor completed with warnings"
+
+      - name: Check for changes
+        run: |
+          if git diff --quiet; then
+            echo "No duplicate skills found"
+          else
+            echo "Duplicates removed - committing changes"
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add skills/
+            git commit -m "chore: remove duplicate skills [bot]"
+            git push
+          fi
+
+  skill-index-rebuild:
+    name: Rebuild Skill Index
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Rebuild index
+        run: bash scripts/build_skill_index.sh
+
+      - name: Verify and commit index
+        run: |
+          test -f docs/SKILL_INDEX.md
+          echo "Skill index rebuilt successfully"
+
+          if git diff --quiet docs/SKILL_INDEX.md; then
+            echo "Skill index unchanged — nothing to commit"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add docs/SKILL_INDEX.md
+            git commit -m "chore: rebuild skill index [bot]"
+            git push
+          fi

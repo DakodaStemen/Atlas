@@ -1,0 +1,5 @@
+[
+  { "url": "https://doc.rust-lang.org/std/", "domain": "rust_std" },
+  { "url": "https://react.dev/", "domain": "react_docs" },
+  { "url": "https://example.com/docs", "domain": "external_docs" }
+]
